@@ -27,6 +27,10 @@ constexpr bool tidy_func =
 If a `transform_view` is borrowable, its `iterator` re-creates `F` each time
 it uses `F`, rather than going back to the parent `transform_view`.
 
+## License
+
+`beman.transform_view` is licensed under the Apache License v2.0 with LLVM Exceptions.
+
 ### Usage
 
 ```c++
@@ -51,327 +55,281 @@ int main() {
 
 See online documentation at https://tzlaine.github.io/transform_view .
 
-## Building beman.transform_view
+## Dependencies
 
-### Dependencies
-This project has no C or C++ dependencies.
+### Build Environment
 
-Build-time dependencies:
+This project requires at least the following to build:
 
-- `cmake`
-- `ninja`, `make`, or another CMake-supported build system
-  - CMake defaults to "Unix Makefiles" on POSIX systems
+* A C++ compiler that conforms to the C++23 standard or greater
+* CMake 3.28 or later
+* (Test Only) GoogleTest
 
-#### How to install dependencies
+You can disable building tests by setting CMake option
+[`BEMAN_TRANSFORM_VIEW_BUILD_TESTS`](#beman_transform_view_build_tests) to `OFF`
+when configuring the project.
+
+### Supported Platforms
+
+This project officially supports:
+
+* GCC versions 14–15
+* LLVM Clang++ (with libstdc++ or libc++) versions 18–21
+* AppleClang version 17.0.0 (i.e., the [latest version on GitHub-hosted macOS runners](https://github.com/actions/runner-images/blob/main/images/macos/macos-15-arm64-Readme.md))
+* MSVC version 19.44.35215.0 (i.e., the [latest version on GitHub-hosted Windows runners](https://github.com/actions/runner-images/blob/main/images/windows/Windows2022-Readme.md))
+
+> [!NOTE]
+>
+> Versions outside of this range would likely work as well,
+> especially if you're using a version above the given range
+> (e.g. HEAD/ nightly).
+> These development environments are verified using our CI configuration.
+
+## Development
+
+### Develop using GitHub Codespace
+
+This project supports [GitHub Codespace](https://github.com/features/codespaces)
+via [Development Containers](https://containers.dev/),
+which allows rapid development and instant hacking in your browser.
+We recommend using GitHub codespace to explore this project as it
+requires minimal setup.
+
+Click the following badge to create a codespace:
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/bemanproject/transform_view)
+
+For more documentation on GitHub codespaces, please see
+[this doc](https://docs.github.com/en/codespaces/).
+
+> [!NOTE]
+>
+> The codespace container may take up to 5 minutes to build and spin-up; this is normal.
+
+### Develop locally on your machines
 
 <details>
-<summary>Dependencies install transform_view on Ubuntu 24.04  </summary>
+<summary> For Linux </summary>
 
-```shell
-# Install tools:
-apt-get install -y cmake make ninja-build
+Beman libraries require [recent versions of CMake](#build-environment),
+we recommend downloading CMake directly from [CMake's website](https://cmake.org/download/)
+or installing it with the [Kitware apt library](https://apt.kitware.com/).
 
-# Toolchains:
-apt-get install                           \
-  g++-14 gcc-14                           \
-  clang-18 clang++-18 clang-19 clang++-19
+A [supported compiler](#supported-platforms) should be available from your package manager.
+
+</details>
+
+<details>
+<summary> For MacOS </summary>
+
+Beman libraries require [recent versions of CMake](#build-environment).
+Use [`Homebrew`](https://brew.sh/) to install the latest version of CMake.
+
+```bash
+brew install cmake
+```
+
+A [supported compiler](#supported-platforms) is also available from brew.
+
+For example, you can install the latest major release of Clang as:
+
+```bash
+brew install llvm
 ```
 
 </details>
 
 <details>
-<summary>Dependencies install transform_view on MAC OS $VERSION </summary>
+<summary> For Windows </summary>
 
-<!-- TODO Darius: rewrite section!-->
-```shell
-# TODO
-```
+To build Beman libraries, you will need the MSVC compiler. MSVC can be obtained
+by installing Visual Studio; the free Visual Studio 2022 Community Edition can
+be downloaded from
+[Microsoft](https://visualstudio.microsoft.com/vs/community/).
+
+After Visual Studio has been installed, you can launch "Developer PowerShell for
+VS 2022" by typing it into Windows search bar. This shell environment will
+provide CMake, Ninja, and MSVC, allowing you to build the library and run the
+tests.
+
+Note that you will need to use FetchContent to build GoogleTest. To do so,
+please see the instructions in the "Build GoogleTest dependency from github.com"
+dropdown in the [Project specific configure
+arguments](#project-specific-configure-arguments) section.
 
 </details>
 
-<details>
-<summary>Dependencies install transform_view on Windows $VERSION  </summary>
-<!-- TODO Darius: rewrite section!-->
+### Configure and Build the Project Using CMake Presets
 
-```shell
-# TODO
-```
+This project recommends using [CMake Presets](https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html)
+to configure, build and test the project.
+Appropriate presets for major compilers have been included by default.
+You can use `cmake --list-presets` to see all available presets.
 
-</details>
-
-### How to build beman.transform_view
-
-This project strives to be as normal and simple a CMake project as possible.
-This build workflow in particular will work,
-producing a static `libbeman.transform_view.a` library, ready to package with its headers:
+Here is an example to invoke the `gcc-debug` preset.
 
 ```shell
 cmake --workflow --preset gcc-debug
-cmake --workflow --preset gcc-release
-cmake --install build/gcc-release --prefix /opt/beman.transform_view
+```
+
+Generally, there are two kinds of presets, `debug` and `release`.
+
+The `debug` presets are designed to aid development, so it has debugging
+instrumentation enabled and many sanitizers enabled.
+
+> [!NOTE]
+>
+> The sanitizers that are enabled vary from compiler to compiler.
+> See the toolchain files under ([`cmake`](cmake/)) to determine the exact configuration used for each preset.
+
+The `release` presets are designed for production use, and
+consequently have the highest optimization turned on (e.g. `O3`).
+
+### Configure and Build Manually
+
+If the presets are not suitable for your use-case, a traditional CMake
+invocation will provide more configurability.
+
+To configure, build and test the project with extra arguments,
+you can run this set of commands.
+
+```bash
+cmake \
+  -B build \
+  -S . \
+  -DCMAKE_CXX_STANDARD=20 \
+  -DCMAKE_PREFIX_PATH=$PWD/infra/cmake \
+  # Your extra arguments here.
+cmake --build build
+ctest --test-dir build
+```
+
+> [!IMPORTANT]
+>
+> Beman projects are
+> [passive projects](https://github.com/bemanproject/beman/blob/main/docs/beman_standard.md#cmake),
+> therefore,
+> you will need to specify the C++ version via `CMAKE_CXX_STANDARD`
+> when manually configuring the project.
+
+### Finding and Fetching GTest from GitHub
+
+If you do not have GoogleTest installed on your development system, you may
+optionally configure this project to download a known-compatible release of
+GoogleTest from source and build it as well.
+
+Example commands:
+
+```shell
+cmake -B build -S . \
+    -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES=./infra/cmake/use-fetch-content.cmake \
+    -DCMAKE_CXX_STANDARD=20
+cmake --build build --target all
+cmake --build build --target test
+```
+
+The precise version of GoogleTest that will be used is maintained in
+`./lockfile.json`.
+
+### Project specific configure arguments
+
+Project-specific options are prefixed with `BEMAN_TRANSFORM_VIEW`.
+You can see the list of available options with:
+
+```bash
+cmake -LH -S . -B build | grep "BEMAN_TRANSFORM_VIEW" -C 2
 ```
 
 <details>
-<summary> Build beman.transform_view (verbose logs) </summary>
 
-```shell
-# Configure beman.transform_view via gcc-debug workflow for development.
-$ cmake --workflow --preset gcc-debug
-Executing workflow step 1 of 3: configure preset "gcc-debug"
+<summary> Details of CMake arguments. </summary>
 
-Preset CMake variables:
+#### `BEMAN_TRANSFORM_VIEW_BUILD_TESTS`
 
-  CMAKE_BUILD_TYPE="Debug"
-  CMAKE_CXX_COMPILER="g++-14"
-  CMAKE_CXX_FLAGS="-fsanitize=address -fsanitize=pointer-compare -fsanitize=pointer-subtract -fsanitize=leak -fsanitize=undefined"
-  CMAKE_CXX_STANDARD="23"
+Enable building tests and test infrastructure. Default: ON.
+Values: `{ ON, OFF }`.
 
-Examples to be built: transform_view_direct_usage
--- Configuring done (0.3s)
--- Generating done (0.0s)
--- Build files have been written to: /home/tzlaine/transform_view/build/gcc-debug
+You can configure the project to have this option turned off via:
 
-Executing workflow step 2 of 3: build preset "gcc-debug"
-
-[6/6] Linking CXX executable tests/beman/transform_view/beman.transform_view.tests.transform_view
-
-Executing workflow step 3 of 3: test preset "gcc-debug"
-
-Test project /home/tzlaine/transform_view/build/gcc-debug
-      Start  1: transform_view_.iter_concept_categroy
- 1/25 Test  #1: transform_view_.iter_concept_categroy ......................   Passed    0.01 sec
-      Start  2: transform_view_.default_ctor
- 2/25 Test  #2: transform_view_.default_ctor ...............................   Passed    0.02 sec
-      Start  3: transform_view_.base_
- 3/25 Test  #3: transform_view_.base_ ......................................   Passed    0.03 sec
-      Start  4: transform_view_.begin_end
- 4/25 Test  #4: transform_view_.begin_end ..................................   Passed    0.02 sec
-      Start  5: transform_view_.copy_func_empty_range_copy_alg
- 5/25 Test  #5: transform_view_.copy_func_empty_range_copy_alg .............   Passed    0.01 sec
-      Start  6: transform_view_.copy_func_copy_alg
- 6/25 Test  #6: transform_view_.copy_func_copy_alg .........................   Passed    0.03 sec
-      Start  7: transform_view_.copy_func_empty_range_adaptor_copy_alg
- 7/25 Test  #7: transform_view_.copy_func_empty_range_adaptor_copy_alg .....   Passed    0.03 sec
-      Start  8: transform_view_.copy_func_adaptor_copy_alg
- 8/25 Test  #8: transform_view_.copy_func_adaptor_copy_alg .................   Passed    0.02 sec
-      Start  9: transform_view_.copy_func_empty_range_adaptor_to_vec
- 9/25 Test  #9: transform_view_.copy_func_empty_range_adaptor_to_vec .......   Passed    0.04 sec
-      Start 10: transform_view_.copy_func_adaptor_to_vec
-10/25 Test #10: transform_view_.copy_func_adaptor_to_vec ...................   Passed    0.03 sec
-      Start 11: transform_view_.lower_func_copy_alg
-11/25 Test #11: transform_view_.lower_func_copy_alg ........................   Passed    0.02 sec
-      Start 12: transform_view_.lower_func_range_adaptor
-12/25 Test #12: transform_view_.lower_func_range_adaptor ...................   Passed    0.03 sec
-      Start 13: transform_view_.lower_func_adaptor_to_vec
-13/25 Test #13: transform_view_.lower_func_adaptor_to_vec ..................   Passed    0.04 sec
-      Start 14: transform_view_.lower_upper_func_copy_alg
-14/25 Test #14: transform_view_.lower_upper_func_copy_alg ..................   Passed    0.04 sec
-      Start 15: transform_view_.lower_upper_func_range_adaptor
-15/25 Test #15: transform_view_.lower_upper_func_range_adaptor .............   Passed    0.03 sec
-      Start 16: transform_view_.lower_upper_func_adaptor_to_vec
-16/25 Test #16: transform_view_.lower_upper_func_adaptor_to_vec ............   Passed    0.02 sec
-      Start 17: transform_view_.sentinel_lower_func_copy_alg
-17/25 Test #17: transform_view_.sentinel_lower_func_copy_alg ...............   Passed    0.02 sec
-      Start 18: transform_view_.sentinel_lower_func_range_adaptor
-18/25 Test #18: transform_view_.sentinel_lower_func_range_adaptor ..........   Passed    0.02 sec
-      Start 19: transform_view_.sentinel_lower_func_adaptor_to_vec
-19/25 Test #19: transform_view_.sentinel_lower_func_adaptor_to_vec .........   Passed    0.02 sec
-      Start 20: transform_view_.sentinel_lower_upper_func_copy_alg
-20/25 Test #20: transform_view_.sentinel_lower_upper_func_copy_alg .........   Passed    0.02 sec
-      Start 21: transform_view_.sentinel_lower_upper_func_range_adaptor
-21/25 Test #21: transform_view_.sentinel_lower_upper_func_range_adaptor ....   Passed    0.02 sec
-      Start 22: transform_view_.sentinel_lower_upper_func_adaptor_to_vec
-22/25 Test #22: transform_view_.sentinel_lower_upper_func_adaptor_to_vec ...   Passed    0.02 sec
-      Start 23: transform_view_.borrowability
-23/25 Test #23: transform_view_.borrowability ..............................   Passed    0.03 sec
-      Start 24: transform_view_.borrowability_safety
-24/25 Test #24: transform_view_.borrowability_safety .......................   Passed    0.03 sec
-      Start 25: transform_view_.borrowability_safety_failure
-25/25 Test #25: transform_view_.borrowability_safety_failure ...............   Passed    0.03 sec
-
-100% tests passed, 0 tests failed out of 25
-
-Total Test time (real) =   0.60 sec
-
-# Configure beman.transform_view via gcc-release workflow for direct usage.
-$ cmake --workflow --preset gcc-release
-Executing workflow step 1 of 3: configure preset "gcc-release"
-
-Preset CMake variables:
-
-  CMAKE_BUILD_TYPE="RelWithDebInfo"
-  CMAKE_CXX_COMPILER="g++-14"
-  CMAKE_CXX_FLAGS="-O3"
-  CMAKE_CXX_STANDARD="23"
-
-Examples to be built: transform_view_direct_usage
--- Configuring done (0.3s)
--- Generating done (0.0s)
--- Build files have been written to: /home/tzlaine/transform_view/build/gcc-release
-
-Executing workflow step 2 of 3: build preset "gcc-release"
-
-[6/6] Linking CXX executable tests/beman/transform_view/beman.transform_view.tests.transform_view
-
-Executing workflow step 3 of 3: test preset "gcc-release"
-
-Test project /home/tzlaine/transform_view/build/gcc-release
-      Start  1: transform_view_.iter_concept_categroy
- 1/25 Test  #1: transform_view_.iter_concept_categroy ......................   Passed    0.00 sec
-      Start  2: transform_view_.default_ctor
- 2/25 Test  #2: transform_view_.default_ctor ...............................   Passed    0.00 sec
-      Start  3: transform_view_.base_
- 3/25 Test  #3: transform_view_.base_ ......................................   Passed    0.00 sec
-      Start  4: transform_view_.begin_end
- 4/25 Test  #4: transform_view_.begin_end ..................................   Passed    0.00 sec
-      Start  5: transform_view_.copy_func_empty_range_copy_alg
- 5/25 Test  #5: transform_view_.copy_func_empty_range_copy_alg .............   Passed    0.00 sec
-      Start  6: transform_view_.copy_func_copy_alg
- 6/25 Test  #6: transform_view_.copy_func_copy_alg .........................   Passed    0.00 sec
-      Start  7: transform_view_.copy_func_empty_range_adaptor_copy_alg
- 7/25 Test  #7: transform_view_.copy_func_empty_range_adaptor_copy_alg .....   Passed    0.00 sec
-      Start  8: transform_view_.copy_func_adaptor_copy_alg
- 8/25 Test  #8: transform_view_.copy_func_adaptor_copy_alg .................   Passed    0.00 sec
-      Start  9: transform_view_.copy_func_empty_range_adaptor_to_vec
- 9/25 Test  #9: transform_view_.copy_func_empty_range_adaptor_to_vec .......   Passed    0.00 sec
-      Start 10: transform_view_.copy_func_adaptor_to_vec
-10/25 Test #10: transform_view_.copy_func_adaptor_to_vec ...................   Passed    0.00 sec
-      Start 11: transform_view_.lower_func_copy_alg
-11/25 Test #11: transform_view_.lower_func_copy_alg ........................   Passed    0.00 sec
-      Start 12: transform_view_.lower_func_range_adaptor
-12/25 Test #12: transform_view_.lower_func_range_adaptor ...................   Passed    0.00 sec
-      Start 13: transform_view_.lower_func_adaptor_to_vec
-13/25 Test #13: transform_view_.lower_func_adaptor_to_vec ..................   Passed    0.00 sec
-      Start 14: transform_view_.lower_upper_func_copy_alg
-14/25 Test #14: transform_view_.lower_upper_func_copy_alg ..................   Passed    0.00 sec
-      Start 15: transform_view_.lower_upper_func_range_adaptor
-15/25 Test #15: transform_view_.lower_upper_func_range_adaptor .............   Passed    0.00 sec
-      Start 16: transform_view_.lower_upper_func_adaptor_to_vec
-16/25 Test #16: transform_view_.lower_upper_func_adaptor_to_vec ............   Passed    0.00 sec
-      Start 17: transform_view_.sentinel_lower_func_copy_alg
-17/25 Test #17: transform_view_.sentinel_lower_func_copy_alg ...............   Passed    0.00 sec
-      Start 18: transform_view_.sentinel_lower_func_range_adaptor
-18/25 Test #18: transform_view_.sentinel_lower_func_range_adaptor ..........   Passed    0.00 sec
-      Start 19: transform_view_.sentinel_lower_func_adaptor_to_vec
-19/25 Test #19: transform_view_.sentinel_lower_func_adaptor_to_vec .........   Passed    0.00 sec
-      Start 20: transform_view_.sentinel_lower_upper_func_copy_alg
-20/25 Test #20: transform_view_.sentinel_lower_upper_func_copy_alg .........   Passed    0.00 sec
-      Start 21: transform_view_.sentinel_lower_upper_func_range_adaptor
-21/25 Test #21: transform_view_.sentinel_lower_upper_func_range_adaptor ....   Passed    0.00 sec
-      Start 22: transform_view_.sentinel_lower_upper_func_adaptor_to_vec
-22/25 Test #22: transform_view_.sentinel_lower_upper_func_adaptor_to_vec ...   Passed    0.00 sec
-      Start 23: transform_view_.borrowability
-23/25 Test #23: transform_view_.borrowability ..............................   Passed    0.00 sec
-      Start 24: transform_view_.borrowability_safety
-24/25 Test #24: transform_view_.borrowability_safety .......................   Passed    0.00 sec
-      Start 25: transform_view_.borrowability_safety_failure
-25/25 Test #25: transform_view_.borrowability_safety_failure ...............   Passed    0.00 sec
-
-100% tests passed, 0 tests failed out of 25
-
-Total Test time (real) =   0.04 sec
-
-# Run examples.
-$ build/gcc-release/examples/beman.transform_view.examples.transform_view_direct_usage
-lower
-
+```bash
+cmake -B build -S . -DCMAKE_CXX_STANDARD=20 -DBEMAN_TRANSFORM_VIEW_BUILD_TESTS=OFF
 ```
 
-</details>
+> [!TIP]
+> Because this project requires GoogleTest for running tests,
+> disabling `BEMAN_TRANSFORM_VIEW_BUILD_TESTS` avoids the project from
+> cloning GoogleTest from GitHub.
 
-<details>
-<summary> Install beman.transform_view (verbose logs) </summary>
+#### `BEMAN_TRANSFORM_VIEW_BUILD_EXAMPLES`
 
-```shell
-# Install build artifacts from `build` directory into `opt/beman.transform_view` path.
-$ cmake --install build/gcc-release --prefix /opt/beman.transform_view
--- Install configuration: "RelWithDebInfo"
--- Installing: /opt/beman.transform_view/lib/libbeman.transform_view.a
--- Installing: /opt/beman.transform_view/include/beman/transform_view/transform_view.hpp
+Enable building examples. Default: ON. Values: { ON, OFF }.
 
-# Check tree.
-$ tree /opt/beman.transform_view
-/opt/beman.transform_view
-├── include
-│   └── beman
-│       └── transform_view
-│           └── transform_view.hpp
-└── lib
-    └── libbeman.transform_view.a
+#### `BEMAN_TRANSFORM_VIEW_INSTALL_CONFIG_FILE_PACKAGE`
 
-5 directories, 2 files
-```
+Enable installing the CMake config file package. Default: ON.
+Values: { ON, OFF }.
 
-</details>
-
-<details>
-<summary> Disable tests build </summary>
-
-To build this project with tests disabled (and their dependencies),
-simply use `BEMAN_TRANSFORM_VIEW_BUILD_TESTING=OFF` as documented in upstream [CMake documentation](https://cmake.org/cmake/help/latest/module/CTest.html):
-
-```shell
-cmake -B build -S . -DBEMAN_TRANSFORM_VIEW_BUILD_TESTING=OFF
-```
+This is required so that users of `beman.transform_view` can use
+`find_package(beman.transform_view)` to locate the library.
 
 </details>
 
 ## Integrate beman.transform_view into your project
 
-<details>
-<summary> Use beman.transform_view directly from C++ </summary>
+To use `beman.transform_view` in your C++ project,
+include an appropriate `beman.transform_view` header from your source code.
 
-This library is header only.  If you want to use `beman.transform_view` from your
-project, you can include `beman/transform_view/*.hpp` files from your C++ source
-files
-
-```cpp
+```c++
 #include <beman/transform_view/transform_view.hpp>
 ```
 
-and directly link with `libbeman.transform_view.a`
+> [!NOTE]
+>
+> `beman.transform_view` headers are to be included with the `beman/transform_view/` prefix.
+> Altering include search paths to spell the include target another way (e.g.
+> `#include <transform_view.hpp>`) is unsupported.
 
-```shell
-# Assume /opt/beman.transform_view staging directory.
-$ c++ -o transform_view_usage examples/transform_view_direct_usage.cpp \
-    -I /opt/beman.transform_view/include/ \
-    -L/opt/beman.transform_view/lib/ -lbeman.transform_view
-```
+The process for incorporating `beman.transform_view` into your project depends on the
+build system being used. Instructions for CMake are provided in following sections.
 
-</details>
+### Incorporating `beman.transform_view` into your project with CMake
 
-<details>
-<summary> Use beman.transform_view directly from CMake </summary>
-
-<!-- TODO Darius: rewrite section! Add examples. -->
-
-For CMake based projects, you will need to use the `beman.transform_view` CMake module to define the `beman::transform_view` CMake target:
+For CMake based projects,
+you will need to use the `beman.transform_view` CMake module
+to define the `beman::transform_view` CMake target:
 
 ```cmake
 find_package(beman.transform_view REQUIRED)
 ```
 
-You will also need to add `beman::transform_view`
-to the link libraries of any libraries or executables that include `beman/transform_view/*.hpp` in their source or header file.
+You will also need to add `beman::transform_view` to the link libraries of
+any libraries or executables that include `beman.transform_view` headers.
 
 ```cmake
 target_link_libraries(yourlib PUBLIC beman::transform_view)
 ```
 
-</details>
+### Produce beman.transform_view interface library
 
-<details>
-<summary> Use beman.transform_view from other build systems </summary>
+You can produce transform_view's interface library locally by:
 
-<!-- TODO Darius: rewrite section! Add examples. -->
+```bash
+cmake --workflow --preset gcc-release
+cmake --install build/gcc-release --prefix /opt/beman
+```
 
-Build systems that support `pkg-config` by providing a `beman.transform_view.pc` file.
-Build systems that support interoperation via `pkg-config` should be able to detect `beman.transform_view` for you automatically.
+This will generate the following directory structure at `/opt/beman`.
 
-</details>
-
-### Compiler support
-
-GCC 14 or later; Clang 18 or later; or VS 2022 or later.
-
-Building this repository requires **C++23** or later.
+```txt
+/opt/beman
+├── include
+│   └── beman
+│       └── transform_view
+│           └── transform_view.hpp
+└── lib
+    └── cmake
+        └── beman.transform_view
+            ├── beman.transform_view-config-version.cmake
+            ├── beman.transform_view-config.cmake
+            └── beman.transform_view-targets.cmake
+```

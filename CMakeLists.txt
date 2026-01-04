@@ -1,52 +1,54 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-cmake_minimum_required(VERSION 3.25)
+cmake_minimum_required(VERSION 3.28...4.2)
 
 project(
     beman.transform_view # CMake Project Name, which is also the name of the top-level
     # targets (e.g., library, executable, etc.).
-    DESCRIPTION
-        "A modified `std::ranges::transform_view` that is conditionally borrowed"
+    DESCRIPTION "A conditionally borrowed `std::ranges::transform_view`"
     LANGUAGES CXX
+    VERSION 0.1.0
 )
 
 # [CMAKE.SKIP_TESTS]
 option(
     BEMAN_TRANSFORM_VIEW_BUILD_TESTS
-    "Enable building tests and test infrastructure. Default: ON. Values: { ON, OFF }."
+    "Enable building tests and test infrastructure. Default: ${PROJECT_IS_TOP_LEVEL}. Values: { ON, OFF }."
     ${PROJECT_IS_TOP_LEVEL}
 )
 
 # [CMAKE.SKIP_EXAMPLES]
 option(
     BEMAN_TRANSFORM_VIEW_BUILD_EXAMPLES
-    "Enable building examples. Default: ON. Values: { ON, OFF }."
+    "Enable building examples. Default: ${PROJECT_IS_TOP_LEVEL}. Values: { ON, OFF }."
     ${PROJECT_IS_TOP_LEVEL}
 )
 
-include(FetchContent)
-include(GNUInstallDirs)
+# for find of beman-install-library
+include(infra/cmake/beman-install-library-config.cmake)
+
+add_library(beman.transform_view INTERFACE)
+add_library(beman::transform_view ALIAS beman.transform_view)
+
+target_sources(
+    beman.transform_view
+    PUBLIC FILE_SET HEADERS BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include"
+)
+
+set_target_properties(
+    beman.transform_view
+    PROPERTIES VERIFY_INTERFACE_HEADER_SETS ON
+)
+
+add_subdirectory(include/beman/transform_view)
+
+include(CTest)
+
+find_package(beman-install-library REQUIRED)
+beman_install_library(beman.transform_view)
 
 if(BEMAN_TRANSFORM_VIEW_BUILD_TESTS)
     enable_testing()
-
-    # Fetch GoogleTest
-    FetchContent_Declare(
-        googletest
-        GIT_REPOSITORY https://github.com/google/googletest.git
-        GIT_TAG
-            f8d7d77c06936315286eb55f8de22cd23c188571 # release-1.14.0
-        EXCLUDE_FROM_ALL
-    )
-    block()
-        set(INSTALL_GTEST OFF) # Disable GoogleTest installation
-        FetchContent_MakeAvailable(googletest)
-    endblock()
-endif()
-
-add_subdirectory(src/beman/transform_view)
-
-if(BEMAN_TRANSFORM_VIEW_BUILD_TESTS)
     add_subdirectory(tests/beman/transform_view)
 endif()
 
