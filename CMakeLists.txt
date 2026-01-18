@@ -42,7 +42,6 @@ set_target_properties(
 
 add_subdirectory(include/beman/transform_view)
 
-
 find_package(beman-install-library REQUIRED)
 beman_install_library(beman.transform_view)
 
